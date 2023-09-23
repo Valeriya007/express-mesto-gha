@@ -2,6 +2,7 @@ const { HTTP_STATUS_OK, HTTP_STATUS_CREATED } = require('http2').constants;
 const Card = require('../models/card');
 const BadRequestError = require('../errors/BadRequestError');
 const NotFoundError = require('../errors/NotFoundError');
+const ForbiddenError = require('../errors/ForbiddenError');
 
 module.exports.createCard = (req, res, next) => {
   const { name, link } = req.body;
@@ -36,16 +37,29 @@ module.exports.getCards = (req, res, next) => {
 };
 
 module.exports.deleteCard = (req, res, next) => {
-  Card.findByIdAndRemove(req.params.cardId)
-    .orFail()
-    .then(() => {
-      res.status(HTTP_STATUS_OK).send({ message: 'Карточка удалена' });
+  Card.findById(req.params.cardId)
+    .then((card) => {
+      if (!card.owner.equals(req.user._id)) {
+        throw new ForbiddenError('Карточка принадлежит другому пользователю');
+      }
+      Card.deleteOne(card)
+        .orFail()
+        .then(() => {
+          res.status(HTTP_STATUS_OK).send({ message: 'Карточка удалена' });
+        })
+        .catch((err) => {
+          if (err.name === 'CastError') {
+            next(new BadRequestError('Неверный id'));
+          } else if (err.name === 'DocumentNotFoundError') {
+            next(new NotFoundError('Карточка не найдена'));
+          } else {
+            next(err);
+          }
+        });
     })
     .catch((err) => {
-      if (err.name === 'CastError') {
-        next(new BadRequestError(`Некорректный id ${req.params.userId}`));
-      } else if (err.name === 'DocumentNotFoundError') {
-        next(new NotFoundError(`Карточка ${req.params.userId} не найдена`));
+      if (err.name === 'DocumentNotFoundError') {
+        next(new NotFoundError('Карточка  не найдена'));
       } else {
         next(err);
       }
@@ -65,9 +79,9 @@ module.exports.likeCard = (req, res, next) => {
     })
     .catch((err) => {
       if (err.name === 'CastError') {
-        next(new BadRequestError(`Некорректный id ${req.params.userId}`));
+        next(new BadRequestError('Неверный id'));
       } else if (err.name === 'DocumentNotFoundError') {
-        next(new NotFoundError(`Карточка ${req.params.userId} не найдена`));
+        next(new NotFoundError('Карточка  не найдена'));
       } else {
         next(err);
       }
@@ -87,9 +101,9 @@ module.exports.dislikeCard = (req, res, next) => {
     })
     .catch((err) => {
       if (err.name === 'CastError') {
-        next(new BadRequestError(`Некорректный id ${req.params.userId}`));
+        next(new BadRequestError('Неверный id'));
       } else if (err.name === 'DocumentNotFoundError') {
-        next(new NotFoundError(`Карточка ${req.params.userId} не найдена`));
+        next(new NotFoundError('Карточка  не найдена'));
       } else {
         next(err);
       }
