@@ -21,9 +21,10 @@ app.use(limiter);
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(helmet());
-app.use(errors());
 
 app.use('/', require('./routes/index'));
+
+app.use(errors());
 
 app.use(ServerError);
 
