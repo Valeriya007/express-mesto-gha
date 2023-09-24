@@ -4,7 +4,7 @@ const expressRateLimit = require('express-rate-limit');
 const bodyParser = require('body-parser');
 const helmet = require('helmet');
 const { errors } = require('celebrate');
-const ServerError = require('./errors/ServerError');
+const handleServerError = require('./middlewares/handleServerError');
 
 const { PORT = 3000, MONGODB_URL = 'mongodb://127.0.0.1:27017/mestodb' } = process.env;
 
@@ -26,6 +26,6 @@ app.use('/', require('./routes/index'));
 
 app.use(errors());
 
-app.use(ServerError);
+app.use(handleServerError);
 
 app.listen(PORT);

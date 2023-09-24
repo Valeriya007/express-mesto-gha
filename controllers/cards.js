@@ -10,6 +10,7 @@ module.exports.createCard = (req, res, next) => {
   Card.create({ name, link, owner: req.user._id })
     .then((card) => {
       Card.findById(card._id)
+        .orFail()
         .populate('owner')
         .then((carddata) => res.status(HTTP_STATUS_CREATED).send(carddata))
         .catch((err) => {
