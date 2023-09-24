@@ -39,6 +39,7 @@ module.exports.getCards = (req, res, next) => {
 
 module.exports.deleteCard = (req, res, next) => {
   Card.findById(req.params.cardId)
+    .orFail()
     .then((card) => {
       if (!card.owner.equals(req.user._id)) {
         throw new ForbiddenError('Карточка принадлежит другому пользователю');
@@ -49,10 +50,10 @@ module.exports.deleteCard = (req, res, next) => {
           res.status(HTTP_STATUS_OK).send({ message: 'Карточка удалена' });
         })
         .catch((err) => {
-          if (err.name === 'CastError') {
-            next(new BadRequestError('Неверный id'));
-          } else if (err.name === 'DocumentNotFoundError') {
+          if (err.name === 'DocumentNotFoundError') {
             next(new NotFoundError('Карточка не найдена'));
+          } else if (err.name === 'CastError') {
+            next(new BadRequestError('Неверный id'));
           } else {
             next(err);
           }
